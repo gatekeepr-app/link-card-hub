@@ -8,6 +8,13 @@
       "when": 1792978682034,
       "tag": "0000_create_cards_and_roles",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792979408379,
+      "tag": "0001_lov_database_migration",
+      "breakpoints": true
     }
   ]
 }
