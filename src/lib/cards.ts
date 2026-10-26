@@ -43,10 +43,20 @@ function publicClient() {
   });
 }
 
-async function assertAdmin(context: { supabase: Database[""]; userId: string } | any) {
+type AuthContext = {
+  supabase: {
+    rpc: (
+      fn: "has_role",
+      args: { _user_id: string; _role: Database["public"]["Enums"]["app_role"] },
+    ) => PromiseLike<{ data: boolean | null }>;
+  };
+  userId: string;
+};
+
+async function assertAdmin(context: AuthContext) {
   const { data: isAdmin } = await context.supabase.rpc("has_role", {
     _user_id: context.userId,
-    _role: "admin" as never,
+    _role: "admin",
   });
   if (!isAdmin) throw new Error("Forbidden");
 }
