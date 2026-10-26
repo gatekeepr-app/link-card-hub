@@ -90,7 +90,6 @@ function AuthPage() {
   }
 
   async function handleSignOut() {
-    await queryClientSafeClear();
     await supabase.auth.signOut();
     setSignedInEmail(null);
     setCanClaim(false);
@@ -176,7 +175,3 @@ function AuthPage() {
   );
 }
 
-async function queryClientSafeClear() {
-  // Light cleanup only; the router-level listener handles redirecting.
-  // No protected queries are cached on this page.
-}
