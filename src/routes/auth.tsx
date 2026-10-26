@@ -26,6 +26,7 @@ function AuthPage() {
   const [busy, setBusy] = useState(false);
   const [signedInEmail, setSignedInEmail] = useState<string | null>(null);
   const [canClaim, setCanClaim] = useState(false);
+  const [needsVerification, setNeedsVerification] = useState(false);
 
   // If a confirmed session already exists, send admins straight to the panel.
   useEffect(() => {
@@ -59,6 +60,11 @@ function AuthPage() {
     try {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) {
+        if (error.code === "email_not_confirmed") {
+          setNeedsVerification(true);
+          toast.error("Verify your email before signing in. You can send a fresh confirmation link below.");
+          return;
+        }
         toast.error(error.message);
         return;
       }
@@ -70,6 +76,24 @@ function AuthPage() {
       setSignedInEmail(email);
       setCanClaim(status.canClaimAdmin);
       toast.error("This account is not an admin yet.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function handleResendVerification() {
+    setBusy(true);
+    try {
+      const { error } = await supabase.auth.resend({
+        type: "signup",
+        email,
+        options: { emailRedirectTo: `${window.location.origin}/auth-callback` },
+      });
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+      toast.success("A new verification link has been sent. Check your email.");
     } finally {
       setBusy(false);
     }
@@ -141,7 +165,10 @@ function AuthPage() {
                   required
                   autoComplete="email"
                   value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  onChange={(e) => {
+                    setEmail(e.target.value);
+                    setNeedsVerification(false);
+                  }}
                 />
               </div>
               <div className="grid gap-1.5">
@@ -159,6 +186,11 @@ function AuthPage() {
                 {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : null}
                 Sign in
               </Button>
+              {needsVerification && (
+                <Button type="button" variant="outline" onClick={handleResendVerification} disabled={busy || !email}>
+                  Resend verification email
+                </Button>
+              )}
             </form>
           )}
         </div>
