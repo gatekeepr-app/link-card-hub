@@ -1,13 +1,14 @@
-import { createFileRoute, Link, redirect } from "@tanstack/react-router";
+import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
 import { Suspense, useState } from "react";
 import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  ArrowLeft,
   ExternalLink,
   Loader2,
+  LogOut,
   Pencil,
   Plus,
+  ShieldCheck,
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,6 +22,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
 import {
   adminCardsQueryOptions,
   adminStatusQueryOptions,
@@ -37,7 +39,7 @@ export const Route = createFileRoute("/_authenticated/admin")({
       if (!status.isAdmin) throw redirect({ to: "/auth" });
     }),
   head: () => ({
-    meta: [{ title: "Manage links" }, { name: "robots", content: "noindex" }],
+    meta: [{ title: "Manage links — Gatekeeper" }, { name: "robots", content: "noindex" }],
   }),
   component: AdminPage,
 });
@@ -99,6 +101,7 @@ function LoadingBlock() {
 }
 
 function AdminInner() {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { data: cards } = useSuspenseQuery(adminCardsQueryOptions());
 
@@ -119,6 +122,13 @@ function AdminInner() {
     }
     toast.error(result.message);
     return false;
+  }
+
+  async function handleSignOut() {
+    await queryClient.cancelQueries();
+    queryClient.clear();
+    await supabase.auth.signOut();
+    await navigate({ to: "/auth", replace: true });
   }
 
   async function handleCreate(e: React.FormEvent) {
@@ -176,10 +186,7 @@ function AdminInner() {
     const result = await updateCard({
       data: { ...card, is_active: !card.is_active },
     });
-    await handleResult(
-      result,
-      card.is_active ? "Link hidden." : "Link is live again.",
-    );
+    await handleResult(result, card.is_active ? "Link hidden." : "Link is live again.");
   }
 
   async function handleDelete() {
@@ -197,15 +204,27 @@ function AdminInner() {
 
   return (
     <main className="min-h-screen bg-background">
-      <div className="mx-auto w-full max-w-2xl px-6 py-12">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">Manage links</h1>
-          <Button asChild variant="ghost" size="sm">
-            <Link to="/auth">
-              <LogOutIcon />
-            </Link>
-          </Button>
-        </div>
+      <div className="mx-auto w-full max-w-2xl px-6 py-10">
+        <header className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+              <ShieldCheck className="h-5 w-5" />
+            </span>
+            <div>
+              <p className="text-sm font-semibold tracking-tight text-foreground">Gatekeeper</p>
+              <h1 className="text-sm text-muted-foreground">Manage links</h1>
+            </div>
+          </div>
+          <div className="flex items-center gap-1">
+            <Button asChild variant="ghost" size="sm">
+              <Link to="/">View site</Link>
+            </Button>
+            <Button variant="ghost" size="sm" onClick={handleSignOut}>
+              <LogOut className="h-4 w-4" />
+              Sign out
+            </Button>
+          </div>
+        </header>
 
         <section className="mt-8 rounded-2xl border border-border bg-card p-6 shadow-sm">
           <h2 className="flex items-center gap-2 font-medium text-foreground">
@@ -311,7 +330,10 @@ function AdminInner() {
             <DialogTitle>Edit link</DialogTitle>
           </DialogHeader>
           <form className="grid gap-4" onSubmit={handleSaveEdit}>
-            <CardFields form={editForm} onChange={(patch) => setEditForm((f) => ({ ...f, ...patch }))} />
+            <CardFields
+              form={editForm}
+              onChange={(patch) => setEditForm((f) => ({ ...f, ...patch }))}
+            />
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setEditing(null)}>
                 Cancel
@@ -437,14 +459,5 @@ function CardFields({
         </Label>
       </div>
     </>
-  );
-}
-
-function LogOutIcon() {
-  return (
-    <span className="flex items-center gap-2 text-sm text-muted-foreground">
-      <ArrowLeft className="h-4 w-4" />
-      Sign out
-    </span>
   );
 }
