@@ -7,7 +7,7 @@ Replace Supabase card storage and server functions with Convex while keeping Ver
 ## Architecture Decisions
 
 - Convex owns card data, public reads, admin queries, and admin mutations.
-- Public functions return only active card fields; destination URLs remain server-side.
+- The homepage query returns only public card fields. The active-slug lookup returns its destination for the redirect flow.
 - Every admin query and mutation checks an authenticated identity and the admin role inside Convex.
 - Vercel remains the hosting platform for the TanStack Start app.
 - Do not disable or delete the current Supabase project until data has been imported and the new production flow is verified.
@@ -29,9 +29,9 @@ Replace Supabase card storage and server functions with Convex while keeping Ver
 - [x] Preserve the allowlisted first-admin claim and deny unapproved accounts from admin operations.
 
 ### Phase 3: Data and deployment cutover
-- [ ] Export all existing card rows, including inactive rows, and import them into Convex. The available Supabase publishable key exposed one active row; inactive rows still require an authorized export.
+- [x] Export all existing card rows, including inactive rows, and import them into Convex. The user confirmed the single visible active row was the only card.
 - [x] Create dev and production Convex deployments and configure Vercel's `VITE_CONVEX_URL`.
-- [ ] Deploy and verify the homepage, card destinations, admin sign-in, CRUD, and sitemap. The production homepage and sitemap are verified; admin email flows await Resend configuration and a new owner account.
+- [ ] Deploy and verify the homepage, card destinations, admin sign-in, CRUD, and sitemap. The production homepage, active card route, and sitemap are verified; admin email flows await Resend configuration and a new owner account.
 - [x] Remove Supabase runtime dependencies and configuration from the app. The Supabase project remains available until all records are confirmed imported.
 
 ## Risks and Mitigations
@@ -46,4 +46,5 @@ Replace Supabase card storage and server functions with Convex while keeping Ver
 ## Open Questions
 
 - The user selected Convex Auth and will configure Resend in Convex production.
-- Can the current Supabase project provide an export of all cards, including inactive rows?
+- The user confirmed there were no additional inactive cards to export.
+- The user will configure Resend in Convex production; the admin account cannot be activated until then.
