@@ -1,0 +1,6 @@
+.env
+.env.*
+!.env.example
+New Text Document.txt
+pnpm-lock.yaml
+pnpm-workspace.yaml

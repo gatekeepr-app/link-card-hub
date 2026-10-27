@@ -1,6 +1,8 @@
-import { createFileRoute, Link, redirect, useNavigate } from "@tanstack/react-router";
-import { Suspense, useState } from "react";
-import { useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { useAuthActions } from "@convex-dev/auth/react";
+import { useMutation, useQuery } from "convex/react";
 import { toast } from "sonner";
 import {
   ExternalLink,
@@ -22,22 +24,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { supabase } from "@/integrations/supabase/client";
-import {
-  adminCardsQueryOptions,
-  adminStatusQueryOptions,
-  createCard,
-  deleteCard,
-  updateCard,
-  type AdminCard,
-  type CardResult,
-} from "@/lib/cards";
+import { type AdminCard, type CardResult } from "@/lib/cards";
+import { api } from "../../../convex/_generated/api";
 
 export const Route = createFileRoute("/_authenticated/admin")({
-  loader: ({ context }) =>
-    context.queryClient.ensureQueryData(adminStatusQueryOptions()).then((status) => {
-      if (!status.isAdmin) throw redirect({ to: "/auth" });
-    }),
   head: () => ({
     meta: [{ title: "Manage links — Gatekeeper" }, { name: "robots", content: "noindex" }],
   }),
@@ -82,11 +72,7 @@ function slugify(value: string) {
 }
 
 function AdminPage() {
-  return (
-    <Suspense fallback={<LoadingBlock />}>
-      <AdminInner />
-    </Suspense>
-  );
+  return <AdminInner />;
 }
 
 function LoadingBlock() {
@@ -103,7 +89,11 @@ function LoadingBlock() {
 function AdminInner() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const { data: cards } = useSuspenseQuery(adminCardsQueryOptions());
+  const { signOut } = useAuthActions();
+  const cards = useQuery(api.cards.listAdminCards, {});
+  const createCard = useMutation(api.cards.createCard);
+  const updateCard = useMutation(api.cards.updateCard);
+  const deleteCard = useMutation(api.cards.deleteCard);
 
   const [form, setForm] = useState<FormState>(emptyForm);
   const [slugTouched, setSlugTouched] = useState(false);
@@ -117,7 +107,6 @@ function AdminInner() {
   async function handleResult(result: CardResult, successMessage: string) {
     if (result.ok) {
       toast.success(successMessage);
-      await queryClient.invalidateQueries({ queryKey: ["cards"] });
       return true;
     }
     toast.error(result.message);
@@ -127,7 +116,7 @@ function AdminInner() {
   async function handleSignOut() {
     await queryClient.cancelQueries();
     queryClient.clear();
-    await supabase.auth.signOut();
+    await signOut();
     await navigate({ to: "/auth", replace: true });
   }
 
@@ -140,14 +129,12 @@ function AdminInner() {
     setCreating(true);
     try {
       const result = await createCard({
-        data: {
-          title: form.title.trim(),
-          subtitle: form.subtitle.trim() || null,
-          slug: form.slug,
-          target_url: form.target_url.trim(),
-          sort_order: Number(form.sort_order) || 0,
-          is_active: form.is_active,
-        },
+        title: form.title.trim(),
+        subtitle: form.subtitle.trim() || null,
+        slug: form.slug,
+        target_url: form.target_url.trim(),
+        sort_order: Number(form.sort_order) || 0,
+        is_active: form.is_active,
       });
       if (await handleResult(result, "Link created.")) {
         setForm(emptyForm);
@@ -164,15 +151,13 @@ function AdminInner() {
     setBusy(true);
     try {
       const result = await updateCard({
-        data: {
-          id: editing.id,
-          title: editForm.title.trim(),
-          subtitle: editForm.subtitle.trim() || null,
-          slug: editForm.slug,
-          target_url: editForm.target_url.trim(),
-          sort_order: Number(editForm.sort_order) || 0,
-          is_active: editForm.is_active,
-        },
+        id: editing.id,
+        title: editForm.title.trim(),
+        subtitle: editForm.subtitle.trim() || null,
+        slug: editForm.slug,
+        target_url: editForm.target_url.trim(),
+        sort_order: Number(editForm.sort_order) || 0,
+        is_active: editForm.is_active,
       });
       if (await handleResult(result, "Link updated.")) {
         setEditing(null);
@@ -184,7 +169,13 @@ function AdminInner() {
 
   async function handleToggleActive(card: AdminCard) {
     const result = await updateCard({
-      data: { ...card, is_active: !card.is_active },
+      id: card.id,
+      title: card.title,
+      subtitle: card.subtitle,
+      slug: card.slug,
+      target_url: card.target_url,
+      sort_order: card.sort_order,
+      is_active: !card.is_active,
     });
     await handleResult(result, card.is_active ? "Link hidden." : "Link is live again.");
   }
@@ -193,7 +184,7 @@ function AdminInner() {
     if (!deleting) return;
     setBusy(true);
     try {
-      const result = await deleteCard({ data: { id: deleting.id } });
+      const result = await deleteCard({ id: deleting.id });
       if (await handleResult(result, "Link deleted.")) {
         setDeleting(null);
       }
@@ -201,6 +192,8 @@ function AdminInner() {
       setBusy(false);
     }
   }
+
+  if (cards === undefined) return <LoadingBlock />;
 
   return (
     <main className="min-h-screen bg-background">
