@@ -6,7 +6,7 @@
 // You can pass additional config via defineConfig({ vite: { ... }, etc... }) if needed.
 import { defineConfig } from "@lovable.dev/vite-tanstack-config";
 
-export default defineConfig({
+const lovableConfig = defineConfig({
   // The Lovable wrapper pins its own Cloudflare target in Lovable builds;
   // outside Lovable, build the Nitro server for Vercel.
   nitro: { preset: "vercel" },
@@ -16,3 +16,22 @@ export default defineConfig({
     server: { entry: "server" },
   },
 });
+
+export default async (env: Parameters<typeof lovableConfig>[0]) => {
+  const config = await lovableConfig(env);
+
+  return {
+    ...config,
+    plugins: config.plugins?.filter(
+      (plugin) =>
+        !plugin ||
+        Array.isArray(plugin) ||
+        !("name" in plugin) ||
+        plugin.name !== "vite-tsconfig-paths",
+    ),
+    resolve: {
+      ...config.resolve,
+      tsconfigPaths: true,
+    },
+  };
+};
