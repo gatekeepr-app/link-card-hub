@@ -54,9 +54,12 @@ function Index() {
       <div className="relative mx-auto w-full max-w-6xl px-6 pb-20">
         {/* Header */}
         <header className="flex items-center justify-between py-6">
-          <span className="text-lg font-semibold tracking-tight text-foreground">
-            Gatekeeper
-          </span>
+          <img
+            src="/Short%20Logo.png"
+            alt="Gatekeeper"
+            className="h-auto w-32 sm:w-36 dark:brightness-0 dark:invert"
+            draggable={false}
+          />
         </header>
 
         {/* Hero */}
@@ -66,10 +69,13 @@ function Index() {
             Applications open
           </div>
           <h1 className="text-balance text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-            Apply to{" "}
-            <span className="bg-gradient-to-r from-sky-400 via-blue-500 to-indigo-500 bg-clip-text text-transparent">
-              Gatekeeper
-            </span>
+            <span className="block">Apply to</span>
+            <img
+              src="/Short%20Logo.png"
+              alt="Gatekeeper"
+              className="mx-auto mt-3 block h-auto w-[min(58vw,18rem)] dark:brightness-0 dark:invert"
+              draggable={false}
+            />
           </h1>
           <p className="mx-auto mt-4 max-w-md text-pretty text-muted-foreground">
             Pick a link below — each one takes you straight where it says.

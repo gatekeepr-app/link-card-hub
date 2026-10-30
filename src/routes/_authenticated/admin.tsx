@@ -10,7 +10,6 @@ import {
   LogOut,
   Pencil,
   Plus,
-  ShieldCheck,
   Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -200,11 +199,13 @@ function AdminInner() {
       <div className="mx-auto w-full max-w-2xl px-6 py-10">
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
-              <ShieldCheck className="h-5 w-5" />
-            </span>
+            <img
+              src="/Short%20Logo.png"
+              alt="Gatekeeper"
+              className="h-auto w-32 dark:brightness-0 dark:invert"
+              draggable={false}
+            />
             <div>
-              <p className="text-sm font-semibold tracking-tight text-foreground">Gatekeeper</p>
               <h1 className="text-sm text-muted-foreground">Manage links</h1>
             </div>
           </div>

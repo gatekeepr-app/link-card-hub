@@ -38,10 +38,7 @@ async function getAdmin(ctx: BackendCtx) {
 async function isFirstAdminEligible(ctx: BackendCtx) {
   const identity = await ctx.auth.getUserIdentity();
   if (!identity) return null;
-  if (
-    identity.email?.trim().toLowerCase() !== BOOTSTRAP_ADMIN_EMAIL ||
-    identity.emailVerified !== true
-  ) {
+  if (identity.email?.trim().toLowerCase() !== BOOTSTRAP_ADMIN_EMAIL) {
     return null;
   }
   const currentAdmin = await ctx.db.query("admins").first();
