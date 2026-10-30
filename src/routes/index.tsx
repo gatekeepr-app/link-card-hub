@@ -57,7 +57,7 @@ function Index() {
           <img
             src="/Short%20Logo.png"
             alt="Gatekeeper"
-            className="h-auto w-32 sm:w-36 dark:brightness-0 dark:invert"
+            className="h-auto w-6 sm:w-7 dark:brightness-0 dark:invert"
             draggable={false}
           />
         </header>

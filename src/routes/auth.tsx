@@ -148,7 +148,7 @@ function AuthPage() {
             <img
               src="/Short%20Logo.png"
               alt="Gatekeeper"
-              className="h-auto w-32 dark:brightness-0 dark:invert"
+              className="h-auto w-6 dark:brightness-0 dark:invert"
               draggable={false}
             />
           </div>
