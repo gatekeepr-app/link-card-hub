@@ -52,28 +52,14 @@ function Index() {
       </div>
 
       <div className="relative mx-auto w-full max-w-6xl px-6 pb-20">
-        {/* Header */}
-        <header className="flex items-center justify-between py-6">
-          <img
-            src="/Short%20Logo.png"
-            alt="Gatekeeper"
-            className="h-auto w-6 sm:w-7 dark:brightness-0 dark:invert"
-            draggable={false}
-          />
-        </header>
-
         {/* Hero */}
         <section className="pt-12 text-center sm:pt-20">
-          <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-xs font-medium text-primary">
-            <Sparkles className="h-3.5 w-3.5" />
-            Applications open
-          </div>
-          <h1 className="text-balance text-4xl font-semibold tracking-tight text-foreground sm:text-5xl">
-            <span className="block">Apply to</span>
+          <h1 className="flex items-center justify-center gap-2 text-balance text-4xl font-semibold tracking-tight text-foreground sm:gap-3 sm:text-5xl">
+            <span className="whitespace-nowrap">Apply to</span>
             <img
-              src="/Short%20Logo.png"
+              src="/Gt%20logo%20Black.png"
               alt="Gatekeeper"
-              className="mx-auto mt-3 block h-auto w-[min(58vw,18rem)] dark:brightness-0 dark:invert"
+              className="block h-auto w-[min(48vw,16rem)] shrink-0 dark:brightness-0 dark:invert"
               draggable={false}
             />
           </h1>
