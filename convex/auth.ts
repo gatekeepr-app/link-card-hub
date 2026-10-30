@@ -5,6 +5,14 @@ import { ConvexError } from "convex/values";
 const DEFAULT_ALLOWED_EMAIL = "product.gatekeepr@gmail.com";
 
 export const { auth, signIn, signOut, store, isAuthenticated } = convexAuth({
+  jwt: {
+    customClaims: async (ctx, { userId }) => {
+      const user = await ctx.db.get(userId);
+      return user?.email
+        ? { email: user.email.trim().toLowerCase() }
+        : {};
+    },
+  },
   providers: [
     Password({
       profile(params) {

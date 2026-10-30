@@ -102,6 +102,9 @@ function AuthPage() {
         return;
       }
       toast.success(mode === "signUp" ? "Admin account created and signed in." : "Signed in successfully.");
+      if (mode === "signIn") {
+        await navigate({ to: "/admin", replace: true });
+      }
     } catch (error) {
       toast.error(authErrorMessage(error, mode));
     } finally {
@@ -144,11 +147,11 @@ function AuthPage() {
     <main className="flex min-h-screen items-center justify-center bg-background px-6">
       <div className="w-full max-w-sm">
         <div className="rounded-2xl border border-border bg-card p-8 shadow-none">
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center justify-center gap-2.5">
             <img
               src="/Short%20Logo.png"
               alt="Gatekeeper"
-              className="h-auto w-6 dark:brightness-0 dark:invert"
+              className="h-auto w-8 dark:brightness-0 dark:invert"
               draggable={false}
             />
           </div>

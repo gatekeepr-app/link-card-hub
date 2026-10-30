@@ -1,4 +1,5 @@
 import { v } from "convex/values";
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { mutation, query, type MutationCtx, type QueryCtx } from "./_generated/server";
 import type { Doc, Id } from "./_generated/dataModel";
 
@@ -27,12 +28,23 @@ function toAdminCard(card: Doc<"cards">) {
 
 async function getAdmin(ctx: BackendCtx) {
   const identity = await ctx.auth.getUserIdentity();
-  if (!identity) return null;
+  const userId = await getAuthUserId(ctx);
+  if (!identity || !userId) return null;
   const admin = await ctx.db
     .query("admins")
-    .withIndex("by_subject", (q) => q.eq("subject", identity.subject))
+    .withIndex("by_subject", (q) => q.eq("subject", userId))
     .unique();
-  return admin ? identity : null;
+  if (admin) return identity;
+
+  // Older records stored the session-bound JWT subject, which changes on login.
+  // Match those records by the verified, normalized email to preserve access.
+  const email = identity.email?.trim().toLowerCase();
+  if (!email) return null;
+  const legacyAdmin = await ctx.db
+    .query("admins")
+    .withIndex("by_email", (q) => q.eq("email", email))
+    .first();
+  return legacyAdmin ? identity : null;
 }
 
 async function isFirstAdminEligible(ctx: BackendCtx) {
@@ -133,11 +145,9 @@ export const getAdminStatus = query({
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
     if (!identity) return { isAdmin: false, canClaimAdmin: false, email: null };
-    const admin = await ctx.db
-      .query("admins")
-      .withIndex("by_subject", (q) => q.eq("subject", identity.subject))
-      .unique();
-    if (admin) return { isAdmin: true, canClaimAdmin: false, email: identity.email ?? null };
+    if (await getAdmin(ctx)) {
+      return { isAdmin: true, canClaimAdmin: false, email: identity.email ?? null };
+    }
     const eligible = await isFirstAdminEligible(ctx);
     return {
       isAdmin: false,
@@ -225,10 +235,11 @@ export const claimAdmin = mutation({
   args: {},
   handler: async (ctx) => {
     const identity = await ctx.auth.getUserIdentity();
-    if (!identity) return { ok: false as const, message: "Sign in first." };
+    const userId = await getAuthUserId(ctx);
+    if (!identity || !userId) return { ok: false as const, message: "Sign in first." };
     const current = await ctx.db
       .query("admins")
-      .withIndex("by_subject", (q) => q.eq("subject", identity.subject))
+      .withIndex("by_subject", (q) => q.eq("subject", userId))
       .unique();
     if (current) return { ok: true as const };
     const eligible = await isFirstAdminEligible(ctx);
@@ -236,7 +247,7 @@ export const claimAdmin = mutation({
       return { ok: false as const, message: "This account cannot claim admin access." };
     }
     await ctx.db.insert("admins", {
-      subject: eligible.subject,
+      subject: userId,
       email: BOOTSTRAP_ADMIN_EMAIL,
       createdAt: Date.now(),
     });
