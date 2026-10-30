@@ -30,8 +30,45 @@ function makeFormData(values: Record<string, string>) {
   return data;
 }
 
+function errorDetails(error: unknown) {
+  const details = error instanceof Error ? [error.message] : [];
+  if (error && typeof error === "object" && "data" in error) {
+    const data = (error as { data?: unknown }).data;
+    if (typeof data === "string") details.push(data);
+  }
+  return details.join(" ").toLowerCase();
+}
+
+function authErrorMessage(error: unknown, mode: AuthMode) {
+  const details = errorDetails(error);
+  if (details.includes("invalidaccountid")) {
+    return mode === "signIn"
+      ? "No admin account exists yet. Choose “First time? Set up account.”"
+      : "An account already exists. Sign in instead.";
+  }
+  if (details.includes("invalidsecret") || details.includes("invalid credentials")) {
+    return "Incorrect email or password.";
+  }
+  if (details.includes("already exists")) {
+    return "An account already exists. Sign in instead.";
+  }
+  if (details.includes("not authorized")) {
+    return "This email is not authorized to access Gatekeeper.";
+  }
+  if (details.includes("too many failed attempts")) {
+    return "Too many failed attempts. Wait a while, then try again.";
+  }
+  if (details.includes("email verification is not configured")) {
+    return "The server still requires email verification. Deploy the latest auth changes, then try again.";
+  }
+  return mode === "signIn"
+    ? "Sign-in failed. Check your email and password, or set up the admin account first."
+    : "Account setup failed. Check the email and password, then try again.";
+}
+
 function errorMessage(error: unknown) {
-  return error instanceof Error ? error.message : "Authentication could not be completed.";
+  const details = errorDetails(error);
+  return details || "The request failed. Please try again.";
 }
 
 function AuthPage() {
@@ -55,10 +92,18 @@ function AuthPage() {
     event.preventDefault();
     setBusy(true);
     try {
-      await signIn("password", makeFormData({ email, password, flow: mode }));
-      toast.success(mode === "signUp" ? "Admin account created." : "Signed in.");
+      const result = await signIn("password", makeFormData({ email, password, flow: mode }));
+      if (!result.signingIn) {
+        toast.error(
+          mode === "signUp"
+            ? "Account setup did not finish. Try signing in or contact the admin."
+            : "Sign-in did not finish. Check your details and try again.",
+        );
+        return;
+      }
+      toast.success(mode === "signUp" ? "Admin account created and signed in." : "Signed in successfully.");
     } catch (error) {
-      toast.error(errorMessage(error));
+      toast.error(authErrorMessage(error, mode));
     } finally {
       setBusy(false);
     }
@@ -69,6 +114,7 @@ function AuthPage() {
     try {
       const result = await claimAdmin({});
       if (result.ok) {
+        toast.success("Admin access granted.");
         await navigate({ to: "/admin", replace: true });
       } else {
         toast.error(result.message);
@@ -81,9 +127,14 @@ function AuthPage() {
   }
 
   async function handleSignOut() {
-    await signOut();
-    queryClient.clear();
-    setMode("signIn");
+    try {
+      await signOut();
+      queryClient.clear();
+      setMode("signIn");
+      toast.success("Signed out successfully.");
+    } catch (error) {
+      toast.error(errorMessage(error));
+    }
   }
 
   const checking = authLoading || (isAuthenticated && status === undefined);
